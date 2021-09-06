@@ -6,7 +6,7 @@
 
 /**************************************************************************
   * @brief : task system Memory management
-  * @author : Waies
+  * @author : chWaies
   * @copyright :  
   * @version :v1.0
   * @note : 
@@ -15,7 +15,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "heap_4.h"
+#include "task_mem.h"
 
 /* Defining MPU_WRAPPERS_INCLUDED_FROM_API_FILE prevents task.h from redefining
 all the API functions to use the MPU wrappers.  That should only be done when
@@ -82,7 +82,7 @@ void initHp(hpSeBind* hpBase, uint8_t* heapArr ,size_t hpsize)
 
 
 
-void *hpNew(hpSeBind* hpBase,size_t xWantedSize )
+void *task_new_m(hpSeBind* hpBase,size_t xWantedSize )
 {
 BlockLink_t *pxBlock, *pxPreviousBlock, *pxNewBlockLink;
 void *pvReturn = NULL;
@@ -229,7 +229,7 @@ void *pvReturn = NULL;
 }
 /*-----------------------------------------------------------*/
 
-void hpdel(hpSeBind* hpBase, void *pv )
+void task_del_m(hpSeBind* hpBase, void *pv )
 {
 uint8_t *puc = ( uint8_t * ) pv;
 BlockLink_t *pxLink;
@@ -275,13 +275,13 @@ BlockLink_t *pxLink;
 }
 /*-----------------------------------------------------------*/
 
-size_t getFreehp(hpSeBind* hpBase)
+size_t task_get_free_size(hpSeBind* hpBase)
 {
 	return hpBase->xFreeBytesRemaining;
 }
 /*-----------------------------------------------------------*/
 
-size_t getMinihp(hpSeBind* hpBase)
+size_t task_get_mini_size(hpSeBind* hpBase)
 {
 	return hpBase->xMinimumEverFreeBytesRemaining;
 }

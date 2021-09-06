@@ -1,27 +1,24 @@
 #ifndef TASK_H
 #define TASK_H
-#include "main.h"
-
+#include <stdint.h>
 /*
 1,My compiler will garble when typing Chinese, so translate it in English
 2,Don't think that writing English is pretending to be force,English is good
 */
 
-typedef uint8_t Task_Id;
+typedef unsigned char Task_Id;
 typedef unsigned short Task_Event;
 typedef unsigned short Task_SysEvent;
 
+#define TASK_VOLE 	volatile 
 
 #define IS_TASK_EVENT(REG,BIT)    	     ((REG) & (BIT))
+#define is_event(arg1,arg2,con)			 (IS_TASK_EVENT(arg1,arg2) ? (con |= arg2) : (con) )
 #define CLEAR_TASK_EVENT(REG,BIT) 		 ((REG) ^= (BIT))
-#define TASK_SYSEVENTMAX                 0XFFFF
 #define task_TEST()
 
 
 
-
-/* task message event */
-#define TASK_SYSTEMEVENT							0x8000
 
 typedef enum timestatus
 {
@@ -49,81 +46,101 @@ typedef enum
 	TASK_SUCCESS = !TASK_ERROR
 } TASK_ErrorStatus;
 
+typedef struct 
+{
+	Task_Id task_id;
+	Task_Event task_event;
+	Task_SysEvent task_sysevent;
+}task_uhandler_t;
 
-
+typedef task_uhandler_t  task_u;
 typedef void(*Task_Function )(void*);
+typedef void(*Task_Event_cb )(task_u* arg);
+
+struct task_event_li;
 
 typedef struct taskMan
 {
 	Task_Id task_id;
 	Task_Event task_event;
 	Task_SysEvent task_sysevent;
-	Task_Function taskProcess;
+	Task_Event task_con_event;
+	struct task_event_li * task_EventBase;
+	struct task_event_li* systask_EventBase;
 }taskMan_t;
 
 
-typedef taskMan_t* taskAble;
+typedef taskMan_t* taskType;
 
-void init_TimeRec(void);
+typedef struct task_event_li
+{
+	Task_Event task_event;
+	Task_Event_cb taskeventprocess;
+	struct task_event_li* next;
+}task_event_l_t;
 
-void init_Tasks( void );
+typedef struct 
+{
+	Task_Event cou_event;
+	taskType task;
+}task_handler;
+
+void task_info(void);
+
+void task_time_init(void);
+
+void task_init( void );
 
 /* User use task system related */
-taskAble task_RegisterTaskApp(Task_Function RegTask, Task_Id taskid);
+/* create task */
+taskType task_reg_app(Task_Id taskid);
 
-Task_Id get_TaskLowId(void);
+/* Get the lowest priority of the task */
+Task_Id task_get_lowid(void);
 
-TASK_ErrorStatus delect_ResTaskApp(taskAble* RegTask );
+/* delete task */
+TASK_ErrorStatus task_del_app(taskType* RegTask );
 
-//task message API
-taskMessFlag send_TaskMessage(taskAble task, void* data);
+/*task message API */
+taskMessFlag task_send_msg(taskType task,Task_Event set_event,void* data);
 
-taskMessFlag get_TaskMessage(taskAble task, void** res);
+taskMessFlag task_get_msg(taskType task, void** res);
 
-uint16_t get_Timersize(void);
+/* Set time and event api */
+uint16_t task_get_time_size(void);
+/* Generating common events */
+void task_new_genEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event set_event );
 
-TASK_ErrorStatus task_SetEvent(taskAble task_able , Task_Event taskEvent);
+void task_new_sysEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event set_event );
 
-TASK_ErrorStatus task_ClearEvent(taskAble xtarGet, Task_Event event_flag );
+TASK_ErrorStatus task_set_event(taskType task_type , Task_Event taskEvent);
 
-TASK_ErrorStatus task_SysSetEvent(taskAble task_able , Task_SysEvent task_sysevent);
+TASK_ErrorStatus task_cls_ordEx(taskType xtarGet, Task_Event event_flag );
 
-Task_SysEvent task_GetSysEvent(taskAble task_able);
+TASK_ErrorStatus task_set_sysex(taskType task_type , Task_SysEvent task_sysevent);
 
-TASK_ErrorStatus task_SysClearEvent(taskAble task_able , Task_SysEvent task_sysevent);
+Task_SysEvent task_get_sysEx(taskType task_type);
 
-void timer_Update( uint32_t updateTime );
+TASK_ErrorStatus task_cls_sysex(taskType task_type , Task_SysEvent task_sysevent);
 
-void task_RunSystem(void);
+//The time unit of parameter three is ms 
+TASK_ErrorStatus task_start_timer(taskType task_Able, Task_Event event_flag, uint16_t timeout_value );
 
-void run_Task(void);
-
-TASK_ErrorStatus task_StartTimerEx(taskAble task_Able, Task_Event event_flag, uint16_t timeout_value );
-
-TASK_ErrorStatus task_StopTimerEx( Task_Id taskID, Task_Event event_flag);
-
-/* Guarantee will be deleted , Please use it in the system message!  */
-void task_StopTimerGuara( Task_Id taskID,Task_Event delect_event_id, Task_Event* event_flag);
-
-//uint8_t task_StopTimerConfirm(uint8_t taskID, uint16_t event_id , uint8_t messid);
-uint32_t get_KernalCount(void);
-
-void set_KernalCountClear(void);
+void task_stop_timer(taskType task_type,Task_Event des_event);
 
 
-#define task_TimedEnding(arg1,arg2,arg3) 		do {							\
-											task_ClearEvent(arg1,arg2);			\
-											task_StartTimerEx(arg1,arg2,arg3);	\
-											return;								\
-											}while(0U)
+void task_cls_cnt_time(void);
 
+//Task scheduling related api
+void task_update_time( uint32_t updateTime );
 
+void task_run_system(void);
 
+void task_run(void);
+#if USE_TASK_HANDLER
+task_handler* task_get_handler(void* arg);
 
-/* In order to reflect the priority, please add return at the end to end the function operation */
-#define task_Ending(arg1,arg2) 				do {							    \
-											task_ClearEvent(arg1,arg2);			\
-											return;								\
-											}while(0U)
-											
-#endif
+void task_des_handler(task_handler* tk_hd);
+
+#endif	/* USE_TASK_HANDLER */
+#endif  /* TASK_H */

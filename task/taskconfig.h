@@ -4,34 +4,30 @@
 #include "sysapp.h"
 #include "task.h"
 #include "stdio.h"
-#include "heap_4.h"
+#include "task_mem.h"
 
 
 
 /* How many task time management nodes */
-#define TIMESIZEO    20+2 
+#define TASK_TIME_SIZEO    20+2
 /* 0x400 is 1K */
-#define TASKREGHEAPSIZE  0x400
+#define TASK_REG_HEAP_SIZE  0x400
 
 
-
-
-
-/* Provide system heart clock */
-#define TASK_CORE_TICK()    void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 extern hpSeBind tkhpHandler;
 /*  task heap manage. */
-#define task_new_m(hpBase,xSize)  hpNew(hpBase,xSize)
-#define task_del_m(hpBase,xSize)  hpdel(hpBase,xSize)
 
 
-extern void user_TaskInit(void);
-#define USER_TASKINIT()          user_TaskInit()
+//#define task_new_m(hpBase,xSize)  task_new_m(hpBase,xSize)
+//#define task_del_m(hpBase,xSize)  task_new_m(hpBase,xSize)
+
+#define TASK_TIMER_SAVE_TYPE   		  uint16_t
+#define TASK_SYSEVENTMAX          (0XFFFFU)
 
 
 
-
+#define USER_TASKINIT()
 
 
 

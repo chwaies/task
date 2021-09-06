@@ -107,7 +107,6 @@ typedef struct memSupervise_Bind
 	size_t xMinimumEverFreeBytesRemaining;
 	/*When the bit is free the block is still part of the free heap space.*/
 	size_t xBlockAllocatedBit;
-
 }hpSeBind;
 
 /*
@@ -115,24 +114,13 @@ typedef struct memSupervise_Bind
  */
 
 void initHp(hpSeBind* hpBase, uint8_t* heapArr, size_t hpsize);
-void *hpNew(hpSeBind* hpBase, size_t xSize )  ;
-void hpdel(hpSeBind* hpBase, void *pv )  ;
+void *task_new_m(hpSeBind* hpBase, size_t xSize )  ;
+void task_del_m(hpSeBind* hpBase, void *pv )  ;
 
-size_t getFreehp(hpSeBind* hpBase)  ;
-size_t getMinihp(hpSeBind* hpBase)  ;
+size_t task_get_free_size(hpSeBind* hpBase);
+size_t task_get_mini_size(hpSeBind* hpBase);
 
 
-/*
- * The structures and methods of manipulating the MPU are contained within the
- * port layer.
- *
- * Fills the xMPUSettings structure with the memory region information
- * contained in xRegions.
- */
-#if( portUSING_MPU_WRAPPERS == 1 )
-	struct xMEMORY_REGION;
-	void vPortStoreTaskMPUSettings( xMPU_SETTINGS *xMPUSettings, const struct xMEMORY_REGION * const xRegions, StackType_t *pxBottomOfStack, uint32_t ulStackDepth ) PRIVILEGED_FUNCTION;
-#endif
 
 #ifdef __cplusplus
 }

@@ -1,84 +1,143 @@
-# 使用任务管理，开发单片机应用程序
+# 介绍
+
+**这是一个事件管理软件**
+
+**特性:**
+
+* *任务优先级可分*
+* *事件优先级可分*
+* *实现任务管理*
+* *内存管理*
+* *较低复杂度*
+
+
+
+
+
+#  使用task管理，开发单片机应用程序
 
 ----
 
 ### 快速构建:
 
-- #### 初始化task
-
 - #### 提供1ms定时器
 
-- #### 注册任务&&设置事件&&清除事件
+- #### 初始化task
+
+- #### 注册任务&&生成事件&&设置事件
 
 ----
 
-### 初始化:
+### 提供1ms心脏节拍:
 
 在主函数里面调用
+
+~~~c
+//1ms中断调用
+void task_info(void);
+
+如:
+void TIM7_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM7_IRQn 0 */
+  task_info();
+  /* USER CODE END TIM7_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim7);
+  /* USER CODE BEGIN TIM7_IRQn 1 */
+
+  /* USER CODE END TIM7_IRQn 1 */
+}
+~~~
+
+### 初始化任务管理器:
 
 ~~~c
 int main()
 {
     ....
-    init_Tasks();//初始化task
+    task_init();//初始化task
     
     //当初始化完成之后
-    //执行
+	//用户事件，就可以注册事件了
     run_Task();    
 }
 ~~~
 
-### 提供1ms心脏节拍:
+
+
+### 注册任务&&生成事件&&设置事件:
+
+注册一类任务，该类是指优先级
+
+***taskType task_reg_app(Task_Id taskid)***
+
+* 参数一 任务优先级，数值越大，在task中优先级更高
+
+返回一个任务类型，用于描述任务
+
+
+
+向一类任务注册一个事件
+
+***void task_new_genEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event set_event )***
+
+* task_type -  任务类型
+* tk_pro_cb  - 事件回调函数， void fun (task_u* arg),该函数类型的返回值是void ，参数是task_u* 
+* set_event -  注册的事件
+
+
+
+
+
+向一类任务，设置事件
+
+***TASK_ErrorStatus task_set_event(taskType task_type , Task_Event taskEvent);***
+
+
 
 ~~~c
-//使用宏定义在右侧添加1ms中断，该宏文件在taskConfig.h
-#define TASK_CORE_TICK()    
-~~~
+#define TEST_PRI   1
 
-
-
-### 注册任务&&设置事件&&清除事件:
-
-~~~c
-//设置事件值是热键码
-#define TEST_EVENT 0x0001
+//设置事件值是热键码，必须是热键码
+#define TEST_EVENT1 0x0001
 
 //定义全局变量,该变量作用域不能是局部的
-taskAble task1Handler;
+taskType task1Handler;
 
-//注册任务就必须提供回调函数,回调函数类型为 void fun(void* arg)
-static void test1_Process(void * arg);
+//提供事件回调函数
+void task1_event1_process(task_u* arg)
+{
+	printf("this is a test\n");
+}
 
-//user_TaskInit 函数进行初始化
-//在taskConfig.h 的 USER_TASKINIT() 宏定义中可以修改为别的函数
+
+//用户函数在task_init后面
+//user_TaskInit 任务初始化
 void user_TaskInit(void)
 {
-    // test1_Process 为回调函数
     // 1 是任务优先级,数值越大优先级越高
-	task1Handler = task_RegisterTaskApp(test1_Process,1);
+    // 2 该函数返回一个任务的句柄
+	task1Handler = task_reg_app(TEST_PRI);
     
-    //设置 task1 的 TEST_EVENT 事件，注意的是，该值是一个热键码
-	task_SetEvent(task1Handler , TEST_EVENT);
+    
+    // 1 函数作用是生成一个 TEST_EVENT1 事件
+    //参数1 表示 TEST_EVENT1 事件属于哪个优先级
+    //参数2 是TEST_EVENT1 事件的回调函数
+    //参数3 是事件的热键码
+    task_new_genEx(task1Handler ,task1_event1_process ,TEST_EVENT1 );
+    
+    //生成事件不会立即运行，应需要调用设置事件函数
+    //设置 task1Handler 的 TEST_EVENT 事件，
+    // TEST_EVENT 注意的是，该值是一个热键码,而且是由task_new_genEx 注册过的事件
+	task_set_event(task1Handler , TEST_EVENT1);
+    
 }
 
-static void test1_Process(void * arg)
-{
-	taskAble taskable = (taskAble)arg;
-	Task_Event taskEvent = taskable->task_event;
-    
-    // taskEvent & TEST_EVENT,对应着设置的事件
-    if(taskEvent & TEST_EVENT)
-    {
-        pritnf("this is test task!\n");
-        .....
-        //当 TEST_EVENT 事件处理完成之后，要调用 task_ClearEvent 函数把该事件清除
-        //否则任务管理会出现一直运行该事件
-        task_ClearEvent(taskable,TEST_EVENT);
-    }
-}
 ~~~
 
-**按照上面所描述的配置，一个简单的任务管理就完成了。**
+一个由任务管理的事件就配置成功了。
+
+运行打印：this is a test
 
 
 
@@ -88,4 +147,226 @@ static void test1_Process(void * arg)
 
 *task任务管理*
 
-持续更新中....
+完成上面的之后你会发现，task1 的TEST_EVENT1 事件运行完一次之后就不运行了
+
+当我们想运行一个定时的事件时可以用
+
+ ***task_start_timer(taskType task_Able, Task_Event event_flag, uint16_t timeout_value )*** 
+
+* 参数一 任务的句柄，该参数必须是任务注册产生的
+
+* 参数二 任务要运行的事件，热键码
+
+* 参数三 任务运行的时间(ms)
+
+请接着上面的配置，进行修改
+
+```c
+void task1_event1_process(task_u* arg)
+{
+	printf("this is a test\n");
+    //启动定时事件
+    task_start_timer(task1Handler,TEST_EVENT1,1000);
+}
+```
+
+固件下载后你会发现printf,会隔1s 打印一次
+
+
+
+
+
+
+
+#### 停止定时事件
+
+***void task_stop_timer(taskType task_type,Task_Event des_event);***
+
+注意事项：
+
+* **在本事件中同一类任务中运行 task_stop_timer，才能保证事件能顺利删除**
+
+如:
+
+```c
+#define TEST_PRI   1
+
+//设置事件值是热键码，必须是热键码
+#define TEST_EVENT1 0x0001
+#define TEST_EVENT2 0x0002
+
+
+//定义全局变量,该变量作用域不能是局部的
+taskType task1Handler;
+
+
+void uart1_start_printf(task_u* arg)
+{
+	printf("this is a test\n");
+    task_start_timer(task1Handler,TEST_EVENT1,1000);
+    
+    task_set_event(task1Handler,TEST_EVENT2);
+}
+void uart1_stop_printf(task_u* arg)
+{
+	printf("stop task1Handler TEST_EVENT1 \n");
+    task_stop_timer(task1Handler,TEST_EVENT1);
+}
+
+void user_TaskInit(void)
+{
+
+	task1Handler = task_reg_app(TEST_PRI);
+
+    task_new_genEx(task1Handler ,uart1_start_printf ,TEST_EVENT1 );
+    // 注册一个新事件，用于删除打印事件
+	task_new_genEx(task1Handler ,uart1_stop_printf ,TEST_EVENT2 );
+	task_set_event(task1Handler , TEST_EVENT1);
+    
+}
+
+```
+
+
+
+#### 消息队列的使用
+
+在 task 的管理中，实现有任务消息的处理
+
+***taskMessFlag task_send_msg(taskType task,Task_Event set_event,void\* data)***
+
+* 参数1 ：信息发送给那一个类型的任务
+
+* 参数2：发送给哪一个事件
+* 参数3：携带的数据，该数组作用域必须是全局的
+
+返回一个状态值，见task.h
+
+
+
+***taskMessFlag task_get_msg(taskType task, void\*\* res);***
+
+* 参数1：在哪一个优先级的任务中获取
+* 参数2：接受数据的指针
+
+返回一个状态值，用于判断是否获取成功 见task.h
+
+
+
+例子:
+
+如：在按键处理中申请一个消息，发送到 task1_event3_process 对应的
+
+```c
+
+#define TASK1_DIS_PRINTF 0x000004
+void KeyAction(uint8_t key)
+{
+	switch(key)
+	{
+		case KEY1_PRES:
+		{
+			char* str = (char*)task_new_m(&tkhpHandler,10);
+			char* srcstr = "hello";
+			memset(str,0,10);
+			memcpy(str,srcstr,strlen(srcstr));
+            
+			task_send_msg(task1, TASK1_DIS_PRINTF ,str);
+		}
+}
+    
+    
+void task1_event3_process(task_u* arg )
+{
+	//定义一个指针指向数据
+	char* str = NULL;
+	if( mes_getSucc == task_get_msg(task1,(void*)&str) )
+	{
+		printf("%s\n",str);
+        
+        //释放内存
+		task_del_m(&tkhpHandler,str);
+	}
+}
+
+   
+```
+
+
+
+更多功能教程更新中...
+
+
+
+
+
+#### **配置文件解释:**taskConfig.h
+
+```c
+#define TASK_TIME_SIZEO    20+2
+```
+
+TASK_TIME_SIZEO 的宏定义为时间节点的多少，这个并没有用到内存管理，原因是怕多任务时可能内存申请的比较大，所以为了避免task能够规避风险，不进行采用
+
+内存管理，我们可以调用 *task_get_time_size* 函数获取时间节点的多少来进行调试，修改成为一个合适的数值
+
+
+
+```c
+#define TASK_REG_HEAP_SIZE  0x400
+```
+
+TASKREGHEAPSIZE - 该宏定义是指内存管理的大小
+
+
+
+
+
+```
+#define TIME_SAVE_TYPE   		  uint16_t
+```
+
+该宏定义是时间存储的数据类型，如果65536ms，如果未能满足你的工程需求，可以进行修改
+
+
+
+
+
+
+
+**task 现在还很年轻，更多功能还有待完善！**
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
