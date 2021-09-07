@@ -77,25 +77,27 @@ int main()
 
 
 
-向一类任务注册一个事件
+**向一类任务，生成一个普通事件**
 
-***void task_new_genEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event set_event )***
+***void task_new_genEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event clr_event)***
 
 * task_type -  任务类型
 * tk_pro_cb  - 事件回调函数， void fun (task_u* arg),该函数类型的返回值是void ，参数是task_u* 
-* set_event -  注册的事件
+* clr_event-  注册的事件
+
+clr_event -  热键码越大对应的事件在task_type 所对应的优先级就越高
 
 
 
-
-
-向一类任务，设置事件
+**向一类任务，设置事件**
 
 ***TASK_ErrorStatus task_set_event(taskType task_type , Task_Event taskEvent);***
 
 
 
 ~~~c
+#include "task.h"
+
 #define TEST_PRI   1
 
 //设置事件值是热键码，必须是热键码
@@ -151,7 +153,9 @@ void user_TaskInit(void)
 
 当我们想运行一个定时的事件时可以用
 
- ***task_start_timer(taskType task_Able, Task_Event event_flag, uint16_t timeout_value )*** 
+**向一类任务，开始一个计时器**
+
+ ***task_start_timer(taskType task_Able, Task_Event event_flag, TIME_SAVE_TYPE timeout_value )*** 
 
 * 参数一 任务的句柄，该参数必须是任务注册产生的
 
@@ -180,7 +184,12 @@ void task1_event1_process(task_u* arg)
 
 #### 停止定时事件
 
+**向一类任务，停止一个定时器**
+
 ***void task_stop_timer(taskType task_type,Task_Event des_event);***
+
+- 参数一 任务的句柄，该参数必须是任务注册产生的
+- 参数二 任务要停止的事件，热键码
 
 注意事项：
 
@@ -227,11 +236,89 @@ void user_TaskInit(void)
 
 ```
 
+上述的方式固然可以删除本优先级的任务对应的事件，但是为了规范管理我们也可以设置一个系统事件
+
+与之相比普通事件，系统事件可以有比普通事件更加优先处理的能力
+
+
+
+对应的API如下：
+
+**向一个类优先级任务，生成系统事件**
+
+***void task_new_sysEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event clr_event)***
+
+- task_type -  任务类型
+- tk_pro_cb  - 事件回调函数， void fun (task_u* arg),该函数类型的返回值是void ，参数是task_u* 
+- clr_event -  注册的事件
+
+clr_event 热键码越大对应的事件在task_type 所对应的优先级就越高
+
+```c
+#define TEST_PRI   1
+
+//注意区分系统事件和普通事件
+
+//普通事件
+#define TEST_GEN_EVENT 	0x0001
+
+//系统事件
+#define TEST_SYS_EVENT  0x0001
+
+
+//定义全局变量,该变量作用域不能是局部的
+taskType task1Handler;
+
+
+void uart1_start_printf(task_u* arg)
+{
+	printf("this is a test\n");
+    task_start_timer(task1Handler,TEST_GEN_EVENT,1000);
+}
+
+void uart1_stop_printf(task_u* arg)
+{
+	printf("stop task1Handler TEST_GEN_EVENT \n");
+    task_stop_timer(task1Handler,TEST_GEN_EVENT);
+}
+
+void user_TaskInit(void)
+{
+
+	task1Handler = task_reg_app(TEST_PRI);
+
+    task_new_genEx(task1Handler ,uart1_start_printf ,TEST_GEN_EVENT );
+    
+    // 注册一个系统事件，用于管理删除打印事件
+	task_new_sysEx(task1Handler ,uart1_stop_printf ,TEST_SYS_EVENT );
+    
+    //我们让它，默认运行打印事件
+	task_set_event(task1Handler , TEST_GEN_EVENT);
+    
+}
+
+//信息传递
+//通常是外部的
+void fun(void)
+{
+    //执行关闭printf打印事件,注意这个api是 task_set_sysex 设置系统事件
+    task_cls_sysex(task1Handler , TEST_SYS_EVENT);
+}
+
+
+```
+
+
+
 
 
 #### 消息队列的使用
 
 在 task 的管理中，实现有任务消息的处理
+
+
+
+**向一类任务，发送一个信息**
 
 ***taskMessFlag task_send_msg(taskType task,Task_Event set_event,void\* data)***
 
@@ -243,6 +330,8 @@ void user_TaskInit(void)
 返回一个状态值，见task.h
 
 
+
+**向一类任务，获取一个信息**
 
 ***taskMessFlag task_get_msg(taskType task, void\*\* res);***
 
@@ -318,7 +407,7 @@ TASK_TIME_SIZEO 的宏定义为时间节点的多少，这个并没有用到内�
 
 TASKREGHEAPSIZE - 该宏定义是指内存管理的大小
 
-
+内存管理借鉴的是freertos 的heap_4 ，在此基础上进行了修改，可以管理多个内存。
 
 
 
@@ -334,7 +423,7 @@ TASKREGHEAPSIZE - 该宏定义是指内存管理的大小
 
 
 
-**task 现在还很年轻，更多功能还有待完善！**
+**总而言之，task 现在还很年轻，更多功能还有待完善！**
 
 
 
