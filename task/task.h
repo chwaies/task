@@ -1,6 +1,8 @@
 #ifndef TASK_H
 #define TASK_H
 #include <stdint.h>
+#include "taskconfig.h"
+#include "task_mem.h"
 /*
 1,My compiler will garble when typing Chinese, so translate it in English
 2,Don't think that writing English is pretending to be force,English is good
@@ -12,6 +14,7 @@ typedef unsigned short Task_SysEvent;
 
 #define TASK_VOLE 	volatile 
 
+#define TASK_SYS_EVENT                   (0x8000U)
 #define IS_TASK_EVENT(REG,BIT)    	     ((REG) & (BIT))
 #define is_event(arg1,arg2,con)			 (IS_TASK_EVENT(arg1,arg2) ? (con |= arg2) : (con) )
 #define CLEAR_TASK_EVENT(REG,BIT) 		 ((REG) ^= (BIT))
@@ -64,7 +67,6 @@ typedef struct taskMan
 	Task_Id task_id;
 	Task_Event task_event;
 	Task_SysEvent task_sysevent;
-	Task_Event task_con_event;
 	struct task_event_li * task_EventBase;
 	struct task_event_li* systask_EventBase;
 }taskMan_t;
@@ -107,11 +109,11 @@ taskMessFlag task_send_msg(taskType task,Task_Event set_event,void* data);
 taskMessFlag task_get_msg(taskType task, void** res);
 
 /* Set time and event api */
-uint16_t task_get_time_size(void);
+uint32_t task_get_time_size(void);
 /* Generating common events */
-void task_new_genEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event set_event );
+void task_new_genEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event clr_event);
 
-void task_new_sysEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event set_event );
+void task_new_sysEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event clr_event );
 
 TASK_ErrorStatus task_set_event(taskType task_type , Task_Event taskEvent);
 
@@ -124,7 +126,7 @@ Task_SysEvent task_get_sysEx(taskType task_type);
 TASK_ErrorStatus task_cls_sysex(taskType task_type , Task_SysEvent task_sysevent);
 
 //The time unit of parameter three is ms 
-TASK_ErrorStatus task_start_timer(taskType task_Able, Task_Event event_flag, uint16_t timeout_value );
+TASK_ErrorStatus task_start_timer(taskType task_type, Task_Event event_flag, TIME_SAVE_TYPE timeout_value );
 
 void task_stop_timer(taskType task_type,Task_Event des_event);
 
@@ -143,4 +145,8 @@ task_handler* task_get_handler(void* arg);
 void task_des_handler(task_handler* tk_hd);
 
 #endif	/* USE_TASK_HANDLER */
+
+/* extern */
+extern hpSeBind tkhpHandler;
+
 #endif  /* TASK_H */
