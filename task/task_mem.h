@@ -83,6 +83,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stddef.h>
 
 /* Define the linked list structure.  This is used to link free blocks in order
 of their memory address. */
