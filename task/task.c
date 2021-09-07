@@ -8,9 +8,8 @@
   * @history : 
 */
 
-#include "taskconfig.h"
 #include "task.h"
-#include "task_mem.h"
+
 /* time */
 #define timeRe_t 		 int8_t
 #define TASK_EVENT_BIT   1U
@@ -20,8 +19,6 @@ typedef struct taskLink
 	Task_Id task_id;
 	Task_Event task_event;
 	Task_SysEvent task_sysevent;
-	
-	Task_Event task_con_event;
 	task_event_l_t* task_EventBase;
 	task_event_l_t* systask_EventBase;
 	struct taskLink* taskPrev;
@@ -30,9 +27,9 @@ typedef struct taskLink
 
 typedef struct taskTime
 {
-	TASK_TIMER_SAVE_TYPE tasktime;
-	TASK_TIMER_SAVE_TYPE prevtime;
-	//TASK_TIMER_SAVE_TYPE errortime;
+	TIME_SAVE_TYPE tasktime;
+	TIME_SAVE_TYPE prevtime;
+	//TIME_SAVE_TYPE errortime;
 	Task_Function task;
 }taskTime_t;
 
@@ -40,10 +37,10 @@ typedef struct taskTimerRec
 {
 	Task_Id task_id;
 	Task_Event task_event;
-	uint16_t timeout;
+	TIME_SAVE_TYPE timeout;
 	int16_t cur;
 	taskType task_type;
-//  uint16_t reloadTimeout;
+//  TIME_SAVE_TYPE reloadTimeout;
 } taskTimerRec_t;
 
 
@@ -66,14 +63,13 @@ static taskMessage_t* taskMesfront = NULL;
 static TimerMan timerman;
 
 /* task count calculate */
-static uint16_t timerCount = 0;
+static uint32_t timerCount = 0;
 
 static Task_Id taskLowId = 0xFF;
 static taskLink_t taskHight =		 \
 {									 \
 .task_id = 0xff,					 \
 .task_event = 0x00U,                 \
-.task_con_event = 0x00U,             \
 .task_sysevent = 0,					 \
 .task_EventBase = NULL,              \
 .systask_EventBase = NULL, 			 \
@@ -90,8 +86,6 @@ hpSeBind tkhpHandler;
 /* System heart */
 static TASK_VOLE uint32_t taskCnt;
 
-/* stm32 timer description handle */
-extern TIM_HandleTypeDef htim6;
 
 /* The time used before the task runs */
 static	TASK_VOLE uint32_t ticknow = 0;
@@ -102,18 +96,18 @@ static	TASK_VOLE uint32_t tickprev = 0;
 
 //Application time node
 static timeRe_t task_new_timeSLx(void);
-static timeRe_t task_find_timer( uint8_t task_id, uint16_t event_flag );
-static timeRe_t task_find_timer_prev( uint8_t task_id, uint16_t event_flag );
-static timestatus_t task_add_timer( taskType task_Able, uint16_t event_flag, uint16_t timeout );
-static timestatus_t task_del_timer( uint8_t task_id, uint16_t event_flag);
+static timeRe_t task_find_timer(Task_Id task_id, Task_Event event_flag );
+static timeRe_t task_find_timer_prev(Task_Id task_id, Task_Event event_flag );
+static timestatus_t task_add_timer( taskType task_type, Task_Event event_flag, TIME_SAVE_TYPE timeout );
+static timestatus_t task_del_timer(Task_Id task_id, Task_Event event_flag);
 TASK_ErrorStatus task_remove_timer( Task_Id taskID, Task_Event event_flag);
 static void task_stop_timer_ax( Task_Id taskID,Task_Event delect_event_id, Task_Event* event_flag);
 
 
 static uint32_t task_get_cnt(void);
 static void task_scheduling_process(void * arg);
-static Task_Event task_event_proc(taskType task , Task_Event proevent);
-static void task_clr_event(taskType task_type ,task_event_l_t* event_ll, Task_Event_cb tk_pro_cb ,Task_Event set_event );
+static Task_Event task_event_proc(task_event_l_t* task , Task_Event proevent);
+static void task_clr_event(taskType task_type ,task_event_l_t** event_ll, Task_Event_cb tk_pro_cb ,Task_Event set_event );
 /* message */
 static taskMessFlag task_init_msg(void);
 static void task_msg_exe(void);
@@ -191,7 +185,6 @@ taskType task_reg_app(Task_Id taskid)
 			newtask->task_id = taskid;	// taskid;
 			newtask->task_event = 0;
 			newtask->task_sysevent = 0;
-			newtask->task_con_event = 0;
 			newtask->task_EventBase = NULL;
 			newtask->systask_EventBase = NULL;
 			newtask->taskNext = NULL;
@@ -385,7 +378,7 @@ static void task_msg_exe(void)
  * @param event_flag- find task event
  * @return timeRe_t
  */
-timeRe_t task_find_timer_prev( uint8_t task_id, uint16_t event_flag )
+timeRe_t task_find_timer_prev(Task_Id task_id, Task_Event event_flag )
 {
 	timeRe_t searchTime = timerman[0].cur;
 
@@ -420,7 +413,7 @@ timeRe_t task_find_timer_prev( uint8_t task_id, uint16_t event_flag )
  * @param event_flag- find task event
  * @return timeRe_t
  */
-timeRe_t task_find_timer( uint8_t task_id, uint16_t event_flag )
+timeRe_t task_find_timer(Task_Id task_id, Task_Event event_flag )
 {
 	
 	timeRe_t srchTimer = timerman[0].cur;
@@ -452,10 +445,10 @@ timeRe_t task_find_timer( uint8_t task_id, uint16_t event_flag )
  * @param timeout - Time of event
  * @return timestatus_t
  */
-timestatus_t task_add_timer( taskType task_Able, uint16_t event_flag, uint16_t timeout )
+timestatus_t task_add_timer( taskType task_type, Task_Event event_flag, TIME_SAVE_TYPE timeout )
 {
 	/*Search whether there are exactly the same nodes.*/
-	timeRe_t srchTimer = task_find_timer( task_Able->task_id,event_flag );
+	timeRe_t srchTimer = task_find_timer( task_type->task_id,event_flag );
 	
 	if(srchTimer == 0){
 		//mem full
@@ -472,9 +465,9 @@ timestatus_t task_add_timer( taskType task_Able, uint16_t event_flag, uint16_t t
 				return timerror;
 			}
 			timerman[newtime].task_event = event_flag;
-			timerman[newtime].task_id = task_Able->task_id;
+			timerman[newtime].task_id = task_type->task_id;
 			timerman[newtime].timeout = timeout;
-			timerman[newtime].task_type = task_Able;
+			timerman[newtime].task_type = task_type;
 			/*If it is the first node.*/
 			if (timerman[0].cur == -1)
 			{
@@ -508,7 +501,7 @@ timestatus_t task_add_timer( taskType task_Able, uint16_t event_flag, uint16_t t
  * @param event_flag-Deleted task event
  * @return timestatus_t
  */
-timestatus_t task_del_timer( uint8_t task_id, uint16_t event_flag)
+timestatus_t task_del_timer(Task_Id task_id, Task_Event event_flag)
 {
 	timeRe_t prevtime = task_find_timer_prev(task_id,event_flag);
 	if (prevtime == -1){
@@ -541,7 +534,7 @@ timestatus_t task_del_timer( uint8_t task_id, uint16_t event_flag)
  * @param void
  * @return size
  */
-uint16_t task_get_time_size(void)
+uint32_t task_get_time_size(void)
 {
 	return timerCount;
 }
@@ -578,9 +571,9 @@ void task_init( void )
  * @param set_event - Hotkey code,Event number
  * @return none
  */
-void task_new_genEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event set_event )
+void task_new_genEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event clr_event)
 {
-	task_clr_event(task_type ,task_type->task_EventBase,tk_pro_cb , set_event );
+	task_clr_event(task_type ,&task_type->task_EventBase,tk_pro_cb , clr_event);
 }
 
 
@@ -591,9 +584,9 @@ void task_new_genEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event set
  * @param set_event - Hotkey code,Event number
  * @return none
  */
-void task_new_sysEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event set_event )
+void task_new_sysEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event clr_event)
 {
-	task_clr_event(task_type ,task_type->systask_EventBase,tk_pro_cb , set_event );
+	task_clr_event(task_type ,&task_type->systask_EventBase,tk_pro_cb , clr_event);
 }
 
 
@@ -605,16 +598,15 @@ void task_new_sysEx(taskType task_type , Task_Event_cb tk_pro_cb ,Task_Event set
  * @param set_event - Hotkey code,Event number
  * @return none
  */
-void task_clr_event(taskType task_type ,task_event_l_t* event_ll, Task_Event_cb tk_pro_cb ,Task_Event set_event )
+void task_clr_event(taskType task_type ,task_event_l_t** event_ll, Task_Event_cb tk_pro_cb ,Task_Event set_event )
 {
 	task_event_l_t* event_l_pre;
 	task_event_l_t* event_l;
+
 	if (task_type != NULL && tk_pro_cb && set_event){
 		task_event_l_t* new_event;
 		
-		task_type->task_con_event |= set_event;
-		
-		event_l = event_ll;
+		event_l = *event_ll;
 		
 		event_l_pre = NULL;
 		
@@ -630,33 +622,22 @@ void task_clr_event(taskType task_type ,task_event_l_t* event_ll, Task_Event_cb 
 				event_l = event_l->next;
 			}
 			
-			if (task_type->task_EventBase == NULL || event_l_pre == NULL){
-				new_event->next = task_type->task_EventBase;
-				task_type->task_EventBase = new_event;
+			if (event_ll != &task_type->task_EventBase && (task_type->systask_EventBase == NULL || event_l_pre == NULL))
+			{
+					new_event->next = task_type->systask_EventBase;
+					task_type->systask_EventBase = new_event;
+			}
+			else if (event_ll != &task_type->systask_EventBase && (task_type->task_EventBase == NULL || event_l_pre == NULL))
+			{
+					new_event->next = task_type->task_EventBase;
+					task_type->task_EventBase = new_event;
+
 			}
 			else {
 				event_l_pre->next = new_event;
 				new_event->next = event_l;
 			}
-			
-/*ascending order*/			
-//			while(event_l != NULL && event_l->task_event > set_event){
-//				event_l_pre = event_l;
-//				event_l = event_l->next;
-//			}
-			
-//			if (event_l == NULL || event_l_pre == NULL){
-//				new_event->next = task_type->task_EventBase;
-//				task_type->task_EventBase = new_event;
-//			}
-//			else{
-//				
-//				event_l_pre->next = new_event;
-//				new_event->next = event_l;
-//			}
-
 		}
-		
 	}
 }
 
@@ -682,7 +663,7 @@ TASK_ErrorStatus task_set_event(taskType task_type , Task_Event taskEvent)
 
 /**
  * Clear an event
- * @param task_Able
+ * @param task_type
  * @param task_sysevent
  * @return TASK_ErrorStatus
  */
@@ -707,7 +688,7 @@ TASK_ErrorStatus task_cls_ordEx(taskType task_type, Task_Event event_flag )
 
 /**
  * set system events
- * @param task_Able
+ * @param task_type
  * @param task_sysevent
  * @return TASK_ErrorStatus
  */
@@ -723,7 +704,7 @@ TASK_ErrorStatus task_set_sysex(taskType task_type , Task_SysEvent task_sysevent
 
 /**
  * clear system events
- * @param task_Able
+ * @param task_type
  * @param task_sysevent
  * @return TASK_ErrorStatus
  */
@@ -740,7 +721,7 @@ TASK_ErrorStatus task_cls_sysex(taskType task_type , Task_SysEvent task_sysevent
 
 /**
  * get system events
- * @param task_Able
+ * @param task_type
  * @return TASK_ErrorStatus
  */
 Task_SysEvent task_get_sysEx(taskType task_type)
@@ -803,7 +784,7 @@ void task_update_time( uint32_t updateTime )
 
 /**
  * Get count value
- * @param task_Able
+ * @param task_type
  * @param void
  * @return taskCnt
  */
@@ -879,18 +860,18 @@ void task_run(void)
 
 /**
  * Start a timer for system events
- * @param task_Able
+ * @param task_type
  * @param event_flag:
  * @param timeout_value: The time the task runs (ms)
  * @return TASK_ErrorStatus
  */
-TASK_ErrorStatus task_start_timer(taskType task_Able, Task_Event event_flag, uint16_t timeout_value )
+TASK_ErrorStatus task_start_timer(taskType task_type, Task_Event event_flag, TIME_SAVE_TYPE timeout_value )
 {
 	
-	if (task_Able != NULL){
+	if (task_type != NULL){
 		timestatus_t  newTimer;
 		// Add timer
-		newTimer = task_add_timer( task_Able, event_flag, timeout_value );
+		newTimer = task_add_timer( task_type, event_flag, timeout_value );
 		//Return status
 		return ( (newTimer != NULL) ? TASK_SUCCESS : TASK_ERROR );
 		
@@ -994,15 +975,18 @@ void task_des_handler(task_handler* tk_hd)
  * @param proevent
  * @return none
  */
-static Task_Event task_event_proc(taskType task , Task_Event proevent)
+static Task_Event task_event_proc(task_event_l_t* task , Task_Event proevent)
 {
-	Task_Event conevent = task->task_con_event;
-	task_event_l_t* act = task->task_EventBase;
+	task_event_l_t* act = task;
+	
 	Task_Event bit = 0;
+
 	while( proevent ){
 		
-		if ( conevent & (proevent & (Task_Event)1U) ) {
-			act->taskeventprocess((task_u*)task);
+		if (IS_TASK_EVENT(proevent, (Task_Event)1U) ) {
+			if (act->taskeventprocess != NULL) {
+				act->taskeventprocess((task_u*)task);
+			}
 			break;
 		}
 		proevent >>= 1;
@@ -1030,13 +1014,13 @@ static void task_scheduling_process(void * arg)
 #endif
 	Task_Event proBit = 0;
 	/* sys event handling.*/
-	proBit = task_event_proc( ((taskType)arg),((taskType)arg)->task_sysevent );
+	proBit = task_event_proc( ((taskType)arg)->systask_EventBase,((taskType)arg)->task_sysevent );
 	
 	/* clear event*/
 	task_cls_sysex( ((taskType)arg),(Task_Event)TASK_EVENT_BIT << proBit );
 	
 	/* Ordinary event handling. */
-	proBit = task_event_proc( ((taskType)arg),((taskType)arg)->task_event );
+	proBit = task_event_proc( ((taskType)arg)->task_EventBase,((taskType)arg)->task_event );
 	task_cls_ordEx(((taskType)arg),(Task_Event)TASK_EVENT_BIT << proBit);
 #if USE_TASK_HANDLER
 	task_des_handler(tk_hd);
