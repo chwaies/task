@@ -87,7 +87,7 @@ int main()
 * tk_pro_cb  - 事件回调函数， void fun (task_u* arg),该函数类型的返回值是void ，参数是task_u* 
 * clr_event-  注册的事件
 
-clr_event -  热键码越大对应的事件在task_type 所对应的优先级就越高
+clr_event -  热键码越小对应的事件在task_type 所对应的优先级就越高
 
 
 
@@ -254,7 +254,7 @@ void user_TaskInit(void)
 - tk_pro_cb  - 事件回调函数， void fun (task_u* arg),该函数类型的返回值是void ，参数是task_u* 
 - clr_event -  注册的事件
 
-clr_event 热键码越大对应的事件在task_type 所对应的优先级就越高
+clr_event 热键码越小对应的事件在task_type 所对应的优先级就越高
 
 ```c
 #define TEST_PRI   1
