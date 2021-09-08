@@ -29,7 +29,6 @@
 #include <stdio.h>
 #include "task.h"
 #include "task_app.h"
-#include "key.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

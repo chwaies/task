@@ -3,7 +3,7 @@
 <title>Static Call Graph - [test\test.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image test\test.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Tue Sep 07 18:25:02 2021
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Wed Sep 08 20:44:05 2021
 <BR><P>
 <H3>Maximum Stack Usage =        168 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -855,9 +855,9 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[a6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;prvInsertBlockIntoFreeList
 <LI><a href="#[a5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;prvHeapInit
 </UL>
-<BR>[Called By]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_reg_app
-<LI><a href="#[a1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_init_msg
+<BR>[Called By]<UL><LI><a href="#[a1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_init_msg
 <LI><a href="#[9b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_clr_event
+<LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_reg_app
 </UL>
 
 <P><STRONG><a name="[a7]"></a>task_reg_app</STRONG> (Thumb, 112 bytes, Stack size 16 bytes, task.o(i.task_reg_app))
@@ -889,9 +889,9 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[a3]"></a>task_set_event</STRONG> (Thumb, 22 bytes, Stack size 0 bytes, task.o(i.task_set_event))
-<BR><BR>[Called By]<UL><LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;user_TaskInit
-<LI><a href="#[aa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_update_time
+<BR><BR>[Called By]<UL><LI><a href="#[aa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_update_time
 <LI><a href="#[a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_msg_exe
+<LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;user_TaskInit
 </UL>
 
 <P><STRONG><a name="[9f]"></a>task_time_init</STRONG> (Thumb, 44 bytes, Stack size 0 bytes, task.o(i.task_time_init))
@@ -901,8 +901,8 @@ Global Symbols
 <P><STRONG><a name="[aa]"></a>task_update_time</STRONG> (Thumb, 200 bytes, Stack size 16 bytes, task.o(i.task_update_time))
 <BR><BR>[Stack]<UL><LI>Max Depth = 52<LI>Call Chain = task_update_time &rArr; task_del_timer &rArr; task_find_timer_prev
 </UL>
-<BR>[Calls]<UL><LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_set_event
-<LI><a href="#[9d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_del_timer
+<BR>[Calls]<UL><LI><a href="#[9d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_del_timer
+<LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_set_event
 </UL>
 <BR>[Called By]<UL><LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;task_run_system
 </UL>

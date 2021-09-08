@@ -39,4 +39,3 @@ test\main.o: ..\..\code_base\task_core\task.h
 test\main.o: ..\..\code_base\task_core\taskconfig.h
 test\main.o: ..\..\code_base\task_core\task_mem.h
 test\main.o: ..\task_app\task_app.h
-test\main.o: ..\HARDWARE\Key\key.h

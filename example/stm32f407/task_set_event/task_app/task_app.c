@@ -2,7 +2,6 @@
 
 #include "task.h"
 #include "stdio.h"
-#include "key.h"
 
 #include "task.h"
 
@@ -42,3 +41,4 @@ void user_TaskInit(void)
 	task_set_event(task1Handler , TEST_EVENT1);
     
 }
+
