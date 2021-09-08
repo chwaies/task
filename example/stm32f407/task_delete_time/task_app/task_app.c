@@ -66,3 +66,15 @@ void fun(void)
     //????printf????
     task_set_sysex(task1Handler , TEST_SYS_EVENT);
 }
+
+
+
+
+
+
+void task_hardware_init(void)
+{
+	
+}
+
+

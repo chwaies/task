@@ -406,6 +406,21 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>task</GroupName>
+          <Files>
+            <File>
+              <FileName>task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\code_base\task_core\task.c</FilePath>
+            </File>
+            <File>
+              <FileName>task_mem.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\code_base\task_core\task_mem.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>Hardware</GroupName>
           <Files>
             <File>
@@ -442,21 +457,6 @@
               <FileName>usart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\code_base\st_peripheral\Core\Src\usart.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>Taskcode</GroupName>
-          <Files>
-            <File>
-              <FileName>task.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\code_base\task_core\task.c</FilePath>
-            </File>
-            <File>
-              <FileName>task_mem.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\code_base\task_core\task_mem.c</FilePath>
             </File>
           </Files>
         </Group>
