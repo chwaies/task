@@ -137,7 +137,7 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
 
   /* USER CODE END TIM7_MspDeInit 1 */
   }
-} 
+}
 
 /* USER CODE BEGIN 1 */
 
