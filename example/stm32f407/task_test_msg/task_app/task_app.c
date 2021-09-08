@@ -25,7 +25,6 @@ void test_msg(task_u* arg)
 	if( mes_getSucc == task_get_msg(task1Handler,(void*)&str) )
 	{
 		printf("%s\n",str);
-        
 		task_del_m(&tkhpHandler,str);
 	}
 }
@@ -52,7 +51,7 @@ void user_TaskInit(void)
 }
 
 
-
+//key callback
 void fun(void)
 {
 	char* str = (char*)task_new_m(&tkhpHandler,10);
